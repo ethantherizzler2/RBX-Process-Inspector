@@ -10,6 +10,8 @@
 #include <cmath>
 #include <algorithm> 
 #include "offsets.hpp"
+// Credits to @SpeedNextdoor
+// Credits @ethantherizzler_1 converted from c# to c++ we can paste all day
 
 struct Vector3 {
     float X, Y, Z;
@@ -326,4 +328,5 @@ int main() {
     }
 
     return 0;
+
 }
