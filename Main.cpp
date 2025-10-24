@@ -28,6 +28,69 @@ struct Vector3 {
     }
 };
 
+#if 0 // this can be removed
+struct Vector3 {
+    float X, Y, Z;
+
+    constexpr Vector3() : X(0.0f), Y(0.0f), Z(0.0f) {}
+    constexpr Vector3(float x, float y, float z) : X(x), Y(y), Z(z) {}
+
+    float Length() const {
+        return std::sqrt(X * X + Y * Y + Z * Z);
+    }
+
+    float LengthSquared() const {
+        return X * X + Y * Y + Z * Z;
+    }
+
+    Vector3 Normalized() const {
+        float len = Length();
+        if (len == 0.0f) return Vector3();
+        return *this / len;
+    }
+
+    void Normalize() {
+        float len = Length();
+        if (len != 0.0f) {
+            X /= len; Y /= len; Z /= len;
+        }
+    }
+
+    static float Distance(const Vector3& a, const Vector3& b) {
+        return (a - b).Length();
+    }
+
+    static float Dot(const Vector3& a, const Vector3& b) {
+        return a.X * b.X + a.Y * b.Y + a.Z * b.Z;
+    }
+
+    static Vector3 Cross(const Vector3& a, const Vector3& b) {
+        return Vector3(
+            a.Y * b.Z - a.Z * b.Y,
+            a.Z * b.X - a.X * b.Z,
+            a.X * b.Y - a.Y * b.X
+        );
+    }
+
+    Vector3 operator+(const Vector3& rhs) const { return { X + rhs.X, Y + rhs.Y, Z + rhs.Z }; }
+    Vector3 operator-(const Vector3& rhs) const { return { X - rhs.X, Y - rhs.Y, Z - rhs.Z }; }
+    Vector3 operator*(float scalar) const { return { X * scalar, Y * scalar, Z * scalar }; }
+    Vector3 operator/(float scalar) const { return { X / scalar, Y / scalar, Z / scalar }; }
+
+    Vector3& operator+=(const Vector3& rhs) { X += rhs.X; Y += rhs.Y; Z += rhs.Z; return *this; }
+    Vector3& operator-=(const Vector3& rhs) { X -= rhs.X; Y -= rhs.Y; Z -= rhs.Z; return *this; }
+    Vector3& operator*=(float scalar) { X *= scalar; Y *= scalar; Z *= scalar; return *this; }
+    Vector3& operator/=(float scalar) { X /= scalar; Y /= scalar; Z /= scalar; return *this; }
+
+    bool operator==(const Vector3& rhs) const { return X == rhs.X && Y == rhs.Y && Z == rhs.Z; }
+    bool operator!=(const Vector3& rhs) const { return !(*this == rhs); }
+
+    friend std::ostream& operator<<(std::ostream& os, const Vector3& v) {
+        return os << "(" << v.X << ", " << v.Y << ", " << v.Z << ")";
+    }
+};
+#endif // till here
+
 HANDLE global_handle = NULL;
 DWORD global_pid = 0;
 
@@ -330,3 +393,4 @@ int main() {
     return 0;
 
 }
+
