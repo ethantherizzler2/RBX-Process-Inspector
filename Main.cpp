@@ -91,14 +91,14 @@ struct Vector3 {
 };
 #endif // till here
 
-HANDLE global_handle = NULL;
-DWORD global_pid = 0;
+HANDLE handle = NULL;
+DWORD pid = 0;
 
 namespace memory {
     template <typename T>
     T read(uintptr_t address) {
         T value;
-        ReadProcessMemory(global_handle, (LPCVOID)address, &value, sizeof(T), NULL);
+        ReadProcessMemory(handle, (LPCVOID)address, &value, sizeof(T), NULL);
         return value;
     }
 
@@ -111,27 +111,27 @@ namespace memory {
         if (Process32First(snapshot, &entry) == TRUE) {
             while (Process32Next(snapshot, &entry) == TRUE) {
                 if (_stricmp(entry.szExeFile, "RobloxPlayerBeta.exe") == 0) {
-                    global_pid = entry.th32ProcessID;
+                    pid = entry.th32ProcessID;
                     break;
                 }
             }
         }
         CloseHandle(snapshot);
 
-        if (global_pid == 0) {
+        if (pid == 0) {
             return false;
         }
 
-        global_handle = OpenProcess(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION, FALSE, global_pid);
-        return global_handle != NULL;
+        handle = OpenProcess(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION, FALSE, pid);
+        return handle != NULL;
     }
 
     void detach() {
-        if (global_handle != NULL) {
-            CloseHandle(global_handle);
+        if (handle != NULL) {
+            CloseHandle(handle);
         }
-        global_pid = 0;
-        global_handle = NULL;
+        pid = 0;
+        handle = NULL;
     }
 
     std::string read_string(uintptr_t address, int max_len = 200) {
@@ -254,7 +254,7 @@ namespace rbx {
 
     void print_system_info() {
         std::cout << "\n[+] Current attached memory status\n";
-        std::cout << "Roblox PID: " << global_pid << "\n";
+        std::cout << "Roblox PID: " << pid << "\n";
         std::cout << "Base Address: 0x" << std::hex << memory::get_roblox_base_address() << std::dec << "\n";
         std::cout << "DataModel: 0x" << std::hex << datamodel << std::dec << "\n";
         std::cout << "Workspace: 0x" << std::hex << workspace << std::dec << "\n";
@@ -393,4 +393,5 @@ int main() {
     return 0;
 
 }
+
 
