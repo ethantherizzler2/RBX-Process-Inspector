@@ -382,16 +382,17 @@ int main() {
         }
         else if (input == "7") {
             memory::detach();
-            std::cout << "Detached from Roblox process.\n";
+            std::cout << "Detached from Roblox.\n";
             break;
         }
         else {
-            std::cout << "Invalid option.\n";
+            std::cout << "Invalid.\n";
         }
     }
 
     return 0;
 
 }
+
 
 
