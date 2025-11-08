@@ -1,362 +1,87 @@
 #include <iostream>
-#include <vector>
 #include <string>
-#include <windows.h>
-#include <TlHelp32.h>
-#include <Psapi.h>
-#include <sstream>
-#include <iomanip>
-#include <numeric>
-#include <cmath>
-#include <algorithm> 
-#include "offsets.hpp"
-// Credits to @SpeedNextdoor
-// Credits @ethantherizzler_1 converted from c# to c++ we can paste all day
-
-struct Vector3 {
-    float X, Y, Z;
-
-    constexpr Vector3() : X(0.0f), Y(0.0f), Z(0.0f) {}
-    constexpr Vector3(float x, float y, float z) : X(x), Y(y), Z(z) {}
-
-    float Length() const {
-        return std::sqrt(X * X + Y * Y + Z * Z);
-    }
-
-    friend std::ostream& operator<<(std::ostream& os, const Vector3& v) {
-        return os << "(" << v.X << ", " << v.Y << ", " << v.Z << ")";
-    }
-};
-
-#if 0 // this can be removed
-struct Vector3 {
-    float X, Y, Z;
-
-    constexpr Vector3() : X(0.0f), Y(0.0f), Z(0.0f) {}
-    constexpr Vector3(float x, float y, float z) : X(x), Y(y), Z(z) {}
-
-    float Length() const {
-        return std::sqrt(X * X + Y * Y + Z * Z);
-    }
-
-    float LengthSquared() const {
-        return X * X + Y * Y + Z * Z;
-    }
-
-    Vector3 Normalized() const {
-        float len = Length();
-        if (len == 0.0f) return Vector3();
-        return *this / len;
-    }
-
-    void Normalize() {
-        float len = Length();
-        if (len != 0.0f) {
-            X /= len; Y /= len; Z /= len;
-        }
-    }
-
-    static float Distance(const Vector3& a, const Vector3& b) {
-        return (a - b).Length();
-    }
-
-    static float Dot(const Vector3& a, const Vector3& b) {
-        return a.X * b.X + a.Y * b.Y + a.Z * b.Z;
-    }
-
-    static Vector3 Cross(const Vector3& a, const Vector3& b) {
-        return Vector3(
-            a.Y * b.Z - a.Z * b.Y,
-            a.Z * b.X - a.X * b.Z,
-            a.X * b.Y - a.Y * b.X
-        );
-    }
-
-    Vector3 operator+(const Vector3& rhs) const { return { X + rhs.X, Y + rhs.Y, Z + rhs.Z }; }
-    Vector3 operator-(const Vector3& rhs) const { return { X - rhs.X, Y - rhs.Y, Z - rhs.Z }; }
-    Vector3 operator*(float scalar) const { return { X * scalar, Y * scalar, Z * scalar }; }
-    Vector3 operator/(float scalar) const { return { X / scalar, Y / scalar, Z / scalar }; }
-
-    Vector3& operator+=(const Vector3& rhs) { X += rhs.X; Y += rhs.Y; Z += rhs.Z; return *this; }
-    Vector3& operator-=(const Vector3& rhs) { X -= rhs.X; Y -= rhs.Y; Z -= rhs.Z; return *this; }
-    Vector3& operator*=(float scalar) { X *= scalar; Y *= scalar; Z *= scalar; return *this; }
-    Vector3& operator/=(float scalar) { X /= scalar; Y /= scalar; Z /= scalar; return *this; }
-
-    bool operator==(const Vector3& rhs) const { return X == rhs.X && Y == rhs.Y && Z == rhs.Z; }
-    bool operator!=(const Vector3& rhs) const { return !(*this == rhs); }
-
-    friend std::ostream& operator<<(std::ostream& os, const Vector3& v) {
-        return os << "(" << v.X << ", " << v.Y << ", " << v.Z << ")";
-    }
-};
-#endif // till here
-
-HANDLE handle = NULL;
-DWORD pid = 0;
-
-namespace memory {
-    template <typename T>
-    T read(uintptr_t address) {
-        T value;
-        ReadProcessMemory(handle, (LPCVOID)address, &value, sizeof(T), NULL);
-        return value;
-    }
-
-    bool attach() {
-        PROCESSENTRY32 entry;
-        entry.dwSize = sizeof(PROCESSENTRY32);
-
-        HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
-
-        if (Process32First(snapshot, &entry) == TRUE) {
-            while (Process32Next(snapshot, &entry) == TRUE) {
-                if (_stricmp(entry.szExeFile, "RobloxPlayerBeta.exe") == 0) {
-                    pid = entry.th32ProcessID;
-                    break;
-                }
-            }
-        }
-        CloseHandle(snapshot);
-
-        if (pid == 0) {
-            return false;
-        }
-
-        handle = OpenProcess(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION, FALSE, pid);
-        return handle != NULL;
-    }
-
-    void detach() {
-        if (handle != NULL) {
-            CloseHandle(handle);
-        }
-        pid = 0;
-        handle = NULL;
-    }
-
-    std::string read_string(uintptr_t address, int max_len = 200) {
-        std::string str;
-        str.reserve(max_len);
-        for (int i = 0; i < max_len; ++i) {
-            char c = read<char>(address + i);
-            if (c == 0) {
-                break;
-            }
-            str += c;
-        }
-        return str;
-    }
-
-    uintptr_t get_roblox_base_address() {
-        HMODULE hMods[1024];
-        DWORD cbNeeded;
-        uintptr_t base_address = 0;
-
-        if (EnumProcessModules(global_handle, hMods, sizeof(hMods), &cbNeeded)) {
-            for (unsigned int i = 0; i < (cbNeeded / sizeof(HMODULE)); i++) {
-                TCHAR szModName[MAX_PATH];
-                if (GetModuleFileNameEx(global_handle, hMods[i], szModName, sizeof(szModName) / sizeof(TCHAR))) {
-                    std::string moduleName = szModName;
-                    if (moduleName.find("RobloxPlayerBeta.exe") != std::string::npos) {
-                        base_address = (uintptr_t)hMods[i];
-                        break;
-                    }
-                }
-            }
-        }
-        return base_address;
-    }
-}
-
-namespace rbx_instance {
-    class Instance {
-    public:
-        uintptr_t address;
-
-        Instance(uintptr_t addr) : address(addr) {}
-
-        std::string name() const {
-            uintptr_t ptr = memory::read<uintptr_t>(address + offsets::Name);
-            if (ptr != 0) {
-                return memory::read_string(ptr);
-            }
-            return "";
-        }
-
-        std::string class_name() const {
-            uintptr_t class_descriptor = memory::read<uintptr_t>(address + offsets::ClassDescriptor);
-            if (class_descriptor != 0) {
-                uintptr_t class_name_ptr = memory::read<uintptr_t>(class_descriptor + offsets::ClassDescriptorToClassName);
-                if (class_name_ptr != 0) {
-                    return memory::read_string(class_name_ptr);
-                }
-            }
-            return "";
-        }
-
-        Instance parent() const {
-            return Instance(memory::read<uintptr_t>(address + offsets::Parent));
-        }
-
-        std::vector<Instance> get_children() const {
-            std::vector<Instance> children;
-            uintptr_t start = memory::read<uintptr_t>(address + offsets::Children);
-            uintptr_t end = memory::read<uintptr_t>(start + offsets::ChildrenEnd);
-
-            for (uintptr_t ptr = memory::read<uintptr_t>(start); ptr != end; ptr += 0x10) {
-                uintptr_t child_addr = memory::read<uintptr_t>(ptr);
-                if (child_addr != 0) {
-                    children.push_back(Instance(child_addr));
-                }
-            }
-            return children;
-        }
-
-        Instance find_first_child(const std::string& name_to_find) const {
-            for (const auto& child : get_children()) {
-                if (child.name() == name_to_find) {
-                    return child;
-                }
-            }
-            return Instance(0);
-        }
-
-        Vector3 getPosition() const {
-            return memory::read<Vector3>(address + offsets::Position);
-        }
-    };
-}
-
-namespace rbx {
-    uintptr_t datamodel = 0;
-    uintptr_t workspace = 0;
-    uintptr_t localplayer = 0;
-    uintptr_t character = 0;
-    uintptr_t humanoid = 0;
-
-    uintptr_t get_datamodel() {
-        uintptr_t fake_dm = memory::read<uintptr_t>(memory::get_roblox_base_address() + offsets::FakeDataModelPointer);
-        return memory::read<uintptr_t>(fake_dm + offsets::FakeDataModelToDataModel);
-    }
-
-    void update_services() {
-        datamodel = get_datamodel();
-        rbx_instance::Instance dm(datamodel);
-        workspace = dm.find_first_child("Workspace").address;
-        rbx_instance::Instance players = dm.find_first_child("Players");
-        localplayer = memory::read<uintptr_t>(players.address + offsets::LocalPlayer);
-        rbx_instance::Instance plr_instance(localplayer);
-        character = rbx_instance::Instance(workspace).find_first_child(plr_instance.name()).address;
-        if (character != 0) {
-            humanoid = rbx_instance::Instance(character).find_first_child("Humanoid").address;
-        }
-    }
-
-    void print_system_info() {
-        std::cout << "\n[+] Current attached memory status\n";
-        std::cout << "Roblox PID: " << pid << "\n";
-        std::cout << "Base Address: 0x" << std::hex << memory::get_roblox_base_address() << std::dec << "\n";
-        std::cout << "DataModel: 0x" << std::hex << datamodel << std::dec << "\n";
-        std::cout << "Workspace: 0x" << std::hex << workspace << std::dec << "\n";
-        std::cout << "LocalPlayer: 0x" << std::hex << localplayer << std::dec << "\n";
-        std::cout << "Character: 0x" << std::hex << character << std::dec << "\n";
-        std::cout << "Humanoid: 0x" << std::hex << humanoid << std::dec << "\n";
-    }
-
-    void print_datamodel_children() {
-        rbx_instance::Instance dm(datamodel);
-        std::cout << "\n[+] DataModel Children\n";
-        for (auto child : dm.get_children()) {
-            std::cout << "[" << child.class_name() << "] " << child.name()
-                << " (0x" << std::hex << child.address << std::dec << ")\n";
-        }
-    }
-
-    void print_player_details() {
-        rbx_instance::Instance players = rbx_instance::Instance(datamodel).find_first_child("Players");
-        rbx_instance::Instance localPlayerInst(localplayer);
-
-        std::cout << "\n{+] Player Details\n";
-        for (auto player : players.get_children()) {
-            std::cout << "Player: " << player.name();
-            if (player.name() == localPlayerInst.name()) {
-                std::cout << " (Local Player)";
-            }
-            std::cout << "\n  Class: " << player.class_name();
-            std::cout << "\n  Address: 0x" << std::hex << player.address << std::dec << "\n";
-
-            rbx_instance::Instance charInst = rbx_instance::Instance(workspace).find_first_child(player.name());
-            if (charInst.address != 0) {
-                std::cout << "  Character: 0x" << std::hex << charInst.address << std::dec;
-                Vector3 pos = charInst.getPosition();
-                std::cout << " Position: " << pos << "\n";
-            }
-            std::cout << "---\n";
-        }
-    }
-
-    void print_camera_info() {
-        uintptr_t camera_ptr = memory::read<uintptr_t>(workspace + offsets::Camera);
-        if (camera_ptr) {
-            std::cout << "\n=== Camera Information ===\n";
-            std::cout << "Camera Address: 0x" << std::hex << camera_ptr << std::dec << "\n";
-            float fov = memory::read<float>(camera_ptr + offsets::FOV);
-            Vector3 pos = memory::read<Vector3>(camera_ptr + offsets::CameraPos);
-            std::cout << "FOV: " << fov << "\n";
-            std::cout << "Position: " << pos << "\n";
-        }
-    }
-
-    void print_workspace_stats() {
-        rbx_instance::Instance ws(workspace);
-        std::cout << "\n[+] Workspace status\n";
-        std::cout << "Workspace Address: 0x" << std::hex << workspace << std::dec << "\n";
-
-        int childCount = 0;
-        for (auto child : ws.get_children()) {
-            childCount++;
-        }
-        std::cout << "Total Children: " << childCount << "\n";
-
-        std::cout << "Sample Children:\n";
-        int count = 0;
-        for (auto child : ws.get_children()) {
-            if (count++ >= 10) break;
-            std::cout << "  [" << child.class_name() << "] " << child.name() << "\n";
-        }
-    }
-}
+#include "memory/memory.hpp"
+#include "vm/rbx.hpp"
+#include "other/notifications.hpp"
+#include <thread>
 
 bool is_in_game() {
     rbx::update_services();
-    if (rbx::localplayer == 0 || rbx::character == 0 || rbx::humanoid == 0)
+    if (rbx::localplayer == 0 || rbx::character == 0 || rbx::humanoid == 0) {
         return false;
-    float health = memory::read<float>(rbx::humanoid + offsets::Health);
-    return health > 0.f;
+    }
+    try {
+        memory::read<uint32_t>(rbx::humanoid);
+        return true;
+    }
+    catch (...) {
+        return false;
+    }
+}
+bool wait_for_roblox_and_attach() {
+    int attempts = 0;
+    const int max_attempts = 30;
+
+    while (attempts < max_attempts) {
+        if (memory::find_process("RobloxPlayerBeta.exe")) {
+            break;
+        }
+
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        attempts++;
+    }
+
+    if (!memory::find_roblox_window()) {
+        return false;
+    }
+
+    if (!memory::attach()) {
+        notifications::show(L"Roblox", L"Failed to attach to Roblox");
+        return false;
+    }
+
+    notifications::show(L"Roblox", L"attached to Roblox");
+    return true;
 }
 
 int main() {
-    if (!memory::attach()) {
-        std::cout << "Failed to attach to Roblox\n";
-        return 1;
-    }
-
-    std::cout << "Roblox Memory Analyzer - Attached\n";
+    notifications::show(L"LPA", L"waiting for Roblox to open");
+	wait_for_roblox_and_attach();
+    bool lastStateInGame = false;
+    auto lastCheckTime = std::chrono::steady_clock::now();
 
     while (true) {
-        rbx::update_services();
-        std::string gameState = is_in_game() ? "In Game" : "In Menu";
-        SetConsoleTitle(("Roblox Memory Analyzer - " + gameState).c_str());
+        auto currentTime = std::chrono::steady_clock::now();
+        auto timeSinceLastCheck = std::chrono::duration_cast<std::chrono::seconds>(currentTime - lastCheckTime);
+        if (timeSinceLastCheck.count() >= 2) {
+            bool currentInGame = is_in_game();
 
+            if (currentInGame != lastStateInGame) {
+                if (currentInGame) {
+                    notifications::show(L"Roblox", L"Modules loaded - In Game");
+                }
+                else {
+                    notifications::show(L"Roblox", L"Modules unloaded - In Menu");
+                }
+                lastStateInGame = currentInGame;
+            }
+
+            lastCheckTime = currentTime;
+        }
+
+        rbx::update_services();
+        std::string gameState = lastStateInGame ? "In Game" : "In Menu";
+        SetConsoleTitle(("Module - " + gameState).c_str());
+        // end
         std::cout << "\n[+] Roblox Memory\n";
         std::cout << "[1] Roblox info\n";
         std::cout << "[2] DataModel info\n";
         std::cout << "[3] Player info\n";
         std::cout << "[4] Camera info\n";
         std::cout << "[5] Workspace stats\n";
-        std::cout << "[6] Refresh Data\n";
-        std::cout << "[7] Exit\n";
-        std::cout << "Option<: ";
+        std::cout << "[6] player stats\n";
+        std::cout << "[7] Load Module\n";
+        std::cout << "<: ";
 
         std::string input;
         std::getline(std::cin, input);
@@ -377,22 +102,21 @@ int main() {
             rbx::print_workspace_stats();
         }
         else if (input == "6") {
-            rbx::update_services();
-            std::cout << "Data refreshed\n";
+            rbx::print_character_stats();
         }
         else if (input == "7") {
+            rbx::update_services();
+            std::cout << "Module Loaded\n";
+        }
+        else if (input == "P") {
             memory::detach();
-            std::cout << "Detached from Roblox.\n";
+            std::cout << "Detached from Roblox\n";
             break;
         }
         else {
-            std::cout << "Invalid.\n";
+            std::cout << "Invalid option.\n";
         }
     }
 
     return 0;
-
 }
-
-
-
