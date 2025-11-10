@@ -21,37 +21,63 @@ namespace rbx {
     }
 
     void update_services() {
-        datamodel = get_datamodel();
-        if (!datamodel) return;
+    datamodel = get_datamodel();
+    if (!datamodel)
+        return;
 
-        rbx_instance::Instance dm(datamodel);
+    rbx_instance::Instance dm(datamodel);
 
-        // Core services
+    if (!workspace)
         workspace = dm.find_first_child("Workspace").address;
+    if (!players)
         players = dm.find_first_child("Players").address;
+    if (!camera)
         camera = dm.find_first_child("Camera").address;
+    if (!lighting)
         lighting = dm.find_first_child("Lighting").address;
+    if (!run_service)
         run_service = dm.find_first_child("Run Service").address;
 
-        if (!players) return;
+    if (!players)
+        return;
 
-        localplayer = memory::read<uintptr_t>(players + offsets::LocalPlayer);
-        if (!localplayer) return;
-
+    const uintptr_t new_localplayer = memory::read<uintptr_t>(players + offsets::LocalPlayer);
+    if (new_localplayer && new_localplayer != localplayer) {
+        localplayer = new_localplayer;
         rbx_instance::Instance plr(localplayer);
-        if (!plr.address) return;
-
-        std::string plr_name = plr.name();
-        if (workspace && !plr_name.empty()) {
-            character = rbx_instance::Instance(workspace).find_first_child(plr_name).address;
-            if (character)
+        
+        const std::string plr_name = plr.name();
+        if (!plr_name.empty() && workspace) {
+            rbx_instance::Instance ws(workspace);
+            const auto char_inst = ws.find_first_child(plr_name);
+            if (char_inst.address) {
+                character = char_inst.address;
                 humanoid = rbx_instance::Instance(character).find_first_child("Humanoid").address;
+            } else {
+                character = humanoid = 0;
+            }
+        }
+    } else if (!character && workspace && localplayer) {
+        rbx_instance::Instance plr(localplayer);
+        const std::string plr_name = plr.name();
+        if (!plr_name.empty()) {
+            const uintptr_t char_addr = rbx_instance::Instance(workspace).find_first_child(plr_name).address;
+            if (char_addr) {
+                character = char_addr;
+                humanoid = rbx_instance::Instance(character).find_first_child("Humanoid").address;
+            }
         }
     }
+}
 
-    bool valid() {
-        return datamodel && workspace && players && localplayer && character && humanoid;
-    }
+bool valid() {
+    return datamodel &&
+           workspace &&
+           players &&
+           localplayer &&
+           character &&
+           humanoid;
+}
 
     void print_system_info() {
         std::cout << "\n[+] Current attached memory status\n";
@@ -143,4 +169,5 @@ namespace rbx {
         std::cout << "Position: " << charInst.getPosition() << "\n";
         std::cout << "Velocity: " << charInst.getVelocity() << "\n";
     }
+
 }
