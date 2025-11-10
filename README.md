@@ -1,5 +1,8 @@
-# RBX-Inspector
-A simple analyzer for Roblox
+🕵️‍♂️ RBX-Inspector
 
-- read only this doesnt write anything in the memory if u think
-- very trash and bad only update the offsets to make it keep working!
+- Simple external tool that reads Roblox memory
+- Read-only doesnt touch or write anything to memory
+
+> Just updates offsets to keep it working when Roblox updates
+
+it’s kinda trash — but it works
