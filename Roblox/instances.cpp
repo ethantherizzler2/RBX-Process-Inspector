@@ -1,31 +1,26 @@
-﻿#include "Roblox/instance.hpp"
+#include "Roblox/instance.hpp"
 #include "vm/rbx.hpp"
 
 namespace rbx_instance {
+
     std::string Instance::name() const {
         if (!address) return "";
         uintptr_t ptr = memory::read<uintptr_t>(address + offsets::Name);
-        if (ptr != 0) {
-            return memory::read_string(ptr);
-        }
-        return "";
+        return (ptr != 0) ? memory::read_string(ptr) : "";
     }
 
     std::string Instance::class_name() const {
         if (!address) return "";
+
         uintptr_t class_descriptor = memory::read<uintptr_t>(address + offsets::ClassDescriptor);
-        if (class_descriptor != 0) {
-            uintptr_t class_name_ptr = memory::read<uintptr_t>(class_descriptor + offsets::ClassDescriptorToClassName);
-            if (class_name_ptr != 0) {
-                return memory::read_string(class_name_ptr);
-            }
-        }
-        return "";
+        if (class_descriptor == 0) return "";
+
+        uintptr_t class_name_ptr = memory::read<uintptr_t>(class_descriptor + offsets::ClassDescriptorToClassName);
+        return (class_name_ptr != 0) ? memory::read_string(class_name_ptr) : "";
     }
 
     Instance Instance::parent() const {
-        if (!address) return Instance(0);
-        return Instance(memory::read<uintptr_t>(address + offsets::Parent));
+        return address ? Instance(memory::read<uintptr_t>(address + offsets::Parent)) : Instance(0);
     }
 
     std::vector<Instance> Instance::get_children() const {
@@ -38,7 +33,7 @@ namespace rbx_instance {
         for (uintptr_t ptr = memory::read<uintptr_t>(start); ptr != end; ptr += 0x10) {
             uintptr_t child_addr = memory::read<uintptr_t>(ptr);
             if (child_addr != 0) {
-                children.push_back(Instance(child_addr));
+                children.emplace_back(child_addr);
             }
         }
         return children;
@@ -46,6 +41,7 @@ namespace rbx_instance {
 
     Instance Instance::find_first_child(const std::string& name_to_find) const {
         if (!address) return Instance(0);
+
         for (const auto& child : get_children()) {
             if (child.name() == name_to_find) {
                 return child;
@@ -56,6 +52,7 @@ namespace rbx_instance {
 
     Instance Instance::find_first_child_of_class(const std::string& class_name) const {
         if (!address) return Instance(0);
+
         for (const auto& child : get_children()) {
             if (child.class_name() == class_name) {
                 return child;
@@ -83,15 +80,64 @@ namespace rbx_instance {
             if (child.name() == name_to_find) {
                 return child;
             }
+
             Instance found = child.find_descendant(name_to_find);
             if (found) return found;
         }
         return Instance(0);
     }
 
+
     Vector3 Instance::getPosition() const {
-        if (!address) return Vector3();
-        return memory::read<Vector3>(address + offsets::Position);
+        return address ? memory::read<Vector3>(address + offsets::Position) : Vector3();
+    }
+
+    Vector3 Instance::getVelocity() const {
+        return address ? memory::read<Vector3>(address + offsets::Velocity) : Vector3();
+    }
+
+    float Instance::getWalkSpeed() const {
+        return address ? memory::read<float>(address + offsets::WalkSpeed) : 0.0f;
+    }
+
+    float Instance::getJumpPower() const {
+        return address ? memory::read<float>(address + offsets::JumpPower) : 0.0f;
+    }
+
+    bool Instance::getAnchored() const {
+        return address ? memory::read<bool>(address + offsets::Anchored) : false;
+    }
+
+    bool Instance::getCanCollide() const {
+        return address ? memory::read<bool>(address + offsets::CanCollide) : false;
+    }
+
+    float Instance::getHealth() const {
+        return address ? memory::read<float>(address + offsets::Health) : 0.0f;
+    }
+
+    float Instance::getMaxHealth() const {
+        return address ? memory::read<float>(address + offsets::MaxHealth) : 0.0f;
+    }
+
+    float Instance::getTransparency() const {
+        return address ? memory::read<float>(address + offsets::Transparency) : 0.0f;
+    }
+
+    std::string Instance::getDisplayName() const {
+        if (!address) return "";
+        uintptr_t ptr = memory::read<uintptr_t>(address + offsets::DisplayName);
+        return (ptr != 0) ? memory::read_string(ptr) : "";
+    }
+
+    Instance Instance::getTeam() const {
+        return address ? Instance(memory::read<uintptr_t>(address + offsets::Team)) : Instance(0);
+    }
+
+    std::string Instance::getValue() const {
+        if (!address) return "";
+        uintptr_t ptr = memory::read<uintptr_t>(address + offsets::Value);
+        return (ptr != 0) ? memory::read_string(ptr) : "";
     }
 
     bool Instance::is_a(const std::string& class_name) const {
@@ -112,8 +158,11 @@ namespace rbx_instance {
         std::string path;
         for (auto it = path_parts.rbegin(); it != path_parts.rend(); ++it) {
             path += *it;
-            if (it + 1 != path_parts.rend()) path += " → ";
+            if (it + 1 != path_parts.rend()) {
+                path += " → ";
+            }
         }
         return path;
     }
+
 }
