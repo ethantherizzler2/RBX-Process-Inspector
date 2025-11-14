@@ -26,6 +26,7 @@ namespace memory {
     template uint32_t read<uint32_t>(uintptr_t);
     template uint8_t read<uint8_t>(uintptr_t);
     template char read<char>(uintptr_t);
+	template bool read<bool>(uintptr_t);  // read <bool>
 
     bool find_process(const std::string& process_name) {
         PROCESSENTRY32 entry;
@@ -121,4 +122,5 @@ namespace memory {
         }
         return base_address;
     }
+
 }
