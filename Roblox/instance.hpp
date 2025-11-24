@@ -37,14 +37,7 @@ namespace rbx_instance {
         bool is_a(const std::string& class_name) const;
         std::string get_full_path() const; // end
         // replicated storage acces
-        static Instance get_replicated_storage();
-        static Instance get_players();
-        static Instance get_lighting();
-        static Instance get_sound_service();
-        static Instance get_workspace();
-        static Instance get_core_gui();
-        static Instance get_service(const std::string& service_name);
-
         operator bool() const { return address != 0; }
     };
+
 }
