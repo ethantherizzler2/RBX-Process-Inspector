@@ -7,6 +7,7 @@
 #include <Psapi.h>
 #include "memory.hpp"
 #include "other/vector.hpp"
+#include "visual/matrix.h"
 
 namespace memory {
     HANDLE handle = NULL;
@@ -27,7 +28,8 @@ namespace memory {
     template uint8_t read<uint8_t>(uintptr_t);
     template char read<char>(uintptr_t);
 	template bool read<bool>(uintptr_t);  // read <bool>
-
+    template Matrix4 read<Matrix4>(uintptr_t);   
+    template Vector2 read<Vector2>(uintptr_t);      
     bool find_process(const std::string& process_name) {
         PROCESSENTRY32 entry;
         entry.dwSize = sizeof(PROCESSENTRY32);
@@ -122,5 +124,4 @@ namespace memory {
         }
         return base_address;
     }
-
 }
