@@ -36,11 +36,7 @@ namespace rbx_instance {
         std::string getValue() const;
         bool is_a(const std::string& class_name) const;
         std::string get_full_path() const; // end
-        // replicated storage acces
-          
-          
+
         operator bool() const { return address != 0; }
     };
-
 }
-
