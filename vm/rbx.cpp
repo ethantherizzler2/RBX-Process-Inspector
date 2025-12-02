@@ -21,37 +21,37 @@ namespace rbx {
     }
 
     void update_services() {
-    datamodel = get_datamodel();
-    if (!datamodel) return;
+        datamodel = get_datamodel();
+        if (!datamodel) return;
 
-    rbx_instance::Instance dm(datamodel);
+        rbx_instance::Instance dm(datamodel);
 
-    // Core services
-    workspace = dm.find_first_child("Workspace").address;
-    players = dm.find_first_child("Players").address;
-    camera = dm.find_first_child("Camera").address;
-    lighting = dm.find_first_child("Lighting").address;
-    run_service = dm.find_first_child("Run Service").address;
+        // Core services
+        workspace = dm.find_first_child("Workspace").address;
+        players = dm.find_first_child("Players").address;
+        camera = dm.find_first_child("Camera").address;
+        lighting = dm.find_first_child("Lighting").address;
+        run_service = dm.find_first_child("Run Service").address;
 
-    if (!players) return;
+        if (!players) return;
 
-    localplayer = memory::read<uintptr_t>(players + offsets::LocalPlayer);
-    if (!localplayer) return;
+        localplayer = memory::read<uintptr_t>(players + offsets::LocalPlayer);
+        if (!localplayer) return;
 
-    rbx_instance::Instance plr(localplayer);
-    if (!plr.address) return;
+        rbx_instance::Instance plr(localplayer);
+        if (!plr.address) return;
 
-    std::string plr_name = plr.name();
-    if (workspace && !plr_name.empty()) {
-        character = rbx_instance::Instance(workspace).find_first_child(plr_name).address;
-        if (character)
-            humanoid = rbx_instance::Instance(character).find_first_child("Humanoid").address;
+        std::string plr_name = plr.name();
+        if (workspace && !plr_name.empty()) {
+            character = rbx_instance::Instance(workspace).find_first_child(plr_name).address;
+            if (character)
+                humanoid = rbx_instance::Instance(character).find_first_child("Humanoid").address;
+        }
     }
-}
 
-bool valid() {
-    return datamodel && workspace && players && localplayer && character && humanoid;
-}
+    bool valid() {
+        return datamodel && workspace && players && localplayer && character && humanoid;
+    }
     void print_system_info() {
         std::cout << "\n[+] Current attached memory status\n";
         std::cout << "Roblox PID: " << memory::pid << "\n";
@@ -142,7 +142,4 @@ bool valid() {
         std::cout << "Position: " << charInst.getPosition() << "\n";
         std::cout << "Velocity: " << charInst.getVelocity() << "\n";
     }
-
 }
-
-
