@@ -5,9 +5,6 @@
 #include "other/notifications.hpp"
 #include <thread>
 
-bool esp_running = false; 
-std::thread esp_thread;   
-
 bool is_in_game() {
     rbx::update_services();
     if (rbx::localplayer == 0 || rbx::character == 0 || rbx::humanoid == 0) {
@@ -124,3 +121,4 @@ int main() {
     }
     return 0;
 }
+
