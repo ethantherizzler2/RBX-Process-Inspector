@@ -5,6 +5,9 @@
 #include "other/notifications.hpp"
 #include <thread>
 
+bool esp_running = false; 
+std::thread esp_thread;   
+
 bool is_in_game() {
     rbx::update_services();
     if (rbx::localplayer == 0 || rbx::character == 0 || rbx::humanoid == 0) {
@@ -18,6 +21,7 @@ bool is_in_game() {
         return false;
     }
 }
+
 bool wait_for_roblox_and_attach() {
     int attempts = 0;
     const int max_attempts = 30;
@@ -45,7 +49,7 @@ bool wait_for_roblox_and_attach() {
 }
 
 int main() {
-    notifications::show(L"LPA", L"waiting for Roblox to open");
+	std::cout << "[+] waiting for Roblox\n";
 	wait_for_roblox_and_attach();
     bool lastStateInGame = false;
     auto lastCheckTime = std::chrono::steady_clock::now();
@@ -71,7 +75,7 @@ int main() {
 
         rbx::update_services();
         std::string gameState = lastStateInGame ? "In Game" : "In Menu";
-        SetConsoleTitle(("Module - " + gameState).c_str());
+        SetConsoleTitle(("LPA - RBX Inspector | " + gameState).c_str());
         // end
         std::cout << "\n[+] Roblox Memory\n";
         std::cout << "[1] Roblox info\n";
@@ -80,7 +84,8 @@ int main() {
         std::cout << "[4] Camera info\n";
         std::cout << "[5] Workspace stats\n";
         std::cout << "[6] player stats\n";
-        std::cout << "[7] Load Module\n";
+        std::cout << "[7] Start Esp\n";
+        std::cout << "[8] Load Module\n";
         std::cout << "<: ";
 
         std::string input;
@@ -104,7 +109,7 @@ int main() {
         else if (input == "6") {
             rbx::print_character_stats();
         }
-        else if (input == "7") {
+        else if (input == "") {
             rbx::update_services();
             std::cout << "Module Loaded\n";
         }
@@ -117,6 +122,5 @@ int main() {
             std::cout << "Invalid option.\n";
         }
     }
-
     return 0;
 }
