@@ -59,7 +59,7 @@ int main() {
 
             if (currentInGame != lastStateInGame) {
                 if (currentInGame) {
-                    notifications::show(L"Roblox", L"Modules loaded - In Game");
+                    notifications::show(L"Roblox", L"Modules loaded — In Game");
                 }
                 else {
                     notifications::show(L"Roblox", L"Modules unloaded - In Menu");
@@ -73,7 +73,7 @@ int main() {
         rbx::update_services();
         std::string gameState = lastStateInGame ? "In Game" : "In Menu";
         SetConsoleTitle(("LPA - RBX Inspector | " + gameState).c_str());
-        // end
+
         std::cout << "\n[+] Roblox Memory\n";
         std::cout << "[1] Roblox info\n";
         std::cout << "[2] DataModel info\n";
@@ -81,8 +81,7 @@ int main() {
         std::cout << "[4] Camera info\n";
         std::cout << "[5] Workspace stats\n";
         std::cout << "[6] player stats\n";
-        std::cout << "[7] Start Esp\n";
-        std::cout << "[8] Load Module\n";
+        std::cout << "[7] Load Module\n";
         std::cout << "<: ";
 
         std::string input;
@@ -106,7 +105,7 @@ int main() {
         else if (input == "6") {
             rbx::print_character_stats();
         }
-        else if (input == "") {
+        else if (input == "7") {
             rbx::update_services();
             std::cout << "Module Loaded\n";
         }
@@ -119,6 +118,7 @@ int main() {
             std::cout << "Invalid option.\n";
         }
     }
+    {
+             }
     return 0;
 }
-
