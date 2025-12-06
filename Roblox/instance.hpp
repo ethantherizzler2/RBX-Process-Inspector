@@ -19,7 +19,6 @@ namespace rbx_instance {
         Instance find_first_child(const std::string& name_to_find) const;
         Vector3 getPosition() const;
 
-		// extra methods
         Instance find_first_child_of_class(const std::string& class_name) const;
         std::vector<Instance> get_children_of_class(const std::string& class_name) const;
         Instance find_descendant(const std::string& name_to_find) const;
@@ -40,3 +39,4 @@ namespace rbx_instance {
         operator bool() const { return address != 0; }
     };
 }
+
