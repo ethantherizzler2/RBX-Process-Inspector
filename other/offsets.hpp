@@ -1,4 +1,5 @@
 // Roblox version-e380c8edc8f6477c
+// offsets from https://offsets.ntgetwritewatch.workers.dev/
 namespace offsets {
     inline constexpr uintptr_t Adornee = 0xD0;
     inline constexpr uintptr_t Anchored = 0x24D;
@@ -172,3 +173,4 @@ namespace offsets {
     inline constexpr uintptr_t WorkspaceToWorld = 0x398;
     inline constexpr uintptr_t viewmatrix = 0x4B0;
 }
+
