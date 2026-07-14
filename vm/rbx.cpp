@@ -26,7 +26,6 @@ namespace rbx {
 
         rbx_instance::Instance dm(datamodel);
 
-        // Core services
         workspace = dm.find_first_child("Workspace").address;
         players = dm.find_first_child("Players").address;
         camera = dm.find_first_child("Camera").address;
